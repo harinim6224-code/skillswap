@@ -1,7 +1,22 @@
-<h2>Matches</h2>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matches</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
 
-{% for m in matches %}
-    <p>{{m[0]}} | Has: {{m[1]}}, Wants: {{m[2]}}</p>
-{% endfor %}
+<div class="container">
+    <div class="card">
+        <h2>Matches 🤝</h2>
 
-<a href="/dashboard">Back</a>
+        {% for m in matches %}
+            <p>{{m[0]}} | Has: {{m[1]}} | Wants: {{m[2]}}</p>
+        {% endfor %}
+
+        <a href="/dashboard">Back</a>
+    </div>
+</div>
+
+</body>
+</html>

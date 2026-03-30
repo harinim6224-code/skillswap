@@ -1,8 +1,58 @@
 body {
-    font-family: Arial;
-    text-align: center;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #3a3a5a);
+    height: 100vh;
 }
-input, button {
-    margin: 10px;
-    padding: 8px;
+
+/* Center container */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* Glass card */
+.card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    width: 320px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    text-align: center;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* Input fields */
+input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+}
+
+/* Buttons */
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #ff4e8a;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #ff2e6f;
+}
+
+/* Links */
+a {
+    color: #ffd369;
+    text-decoration: none;
 }

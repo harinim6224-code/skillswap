@@ -1,6 +1,21 @@
-<form method="post">
-    <h2>Add Skills</h2>
-    <input type="text" name="have" placeholder="Skills You Have"><br>
-    <input type="text" name="want" placeholder="Skills You Want"><br>
-    <button>Save</button>
-</form>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Skills</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Add Skills 🧠</h2>
+        <form method="post">
+            <input type="text" name="have" placeholder="Skills you have">
+            <input type="text" name="want" placeholder="Skills you want">
+            <button>Save</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
