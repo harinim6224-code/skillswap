@@ -1,131 +1,137 @@
 from flask import Flask, render_template, request, redirect, session
-import sqlite3
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# DB Connection
-def get_db():
-    return sqlite3.connect("database.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+db = SQLAlchemy(app)
 
-# Create Tables
-def create_tables():
-    conn = get_db()
-    cur = conn.cursor()
-    
-    cur.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT
-    )''')
+# ------------------ MODELS ------------------
 
-    cur.execute('''CREATE TABLE IF NOT EXISTS skills (
-        user_id INTEGER,
-        skills_have TEXT,
-        skills_want TEXT
-    )''')
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(100))
+    password = db.Column(db.String(100))
 
-    conn.commit()
-    conn.close()
+class Skills(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+    skills_have = db.Column(db.String(100))
+    skills_want = db.Column(db.String(100))
 
-create_tables()
+# ------------------ ROUTES ------------------
 
-# Home -> Login
 @app.route('/')
 def home():
     return render_template("login.html")
 
-# Register
-@app.route('/register', methods=['GET','POST'])
+
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
-        password = generate_password_hash(request.form['password'])
+        password = request.form['password']
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        try:
-            cur.execute("INSERT INTO users(name,email,password) VALUES (?,?,?)",
-                        (name,email,password))
-            conn.commit()
-        except:
-            return "Email already exists"
+        user = User(name=name, email=email, password=password)
+        db.session.add(user)
+        db.session.commit()
 
         return redirect('/')
-    
+
     return render_template("register.html")
 
-# Login
+
 @app.route('/login', methods=['POST'])
 def login():
     email = request.form['email']
     password = request.form['password']
 
-    conn = get_db()
-    cur = conn.cursor()
+    user = User.query.filter_by(email=email, password=password).first()
 
-    user = cur.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
-
-    if user and check_password_hash(user[3], password):
-        session['user_id'] = user[0]
+    if user:
+        session['user_id'] = user.id
         return redirect('/dashboard')
     else:
-        return "Invalid credentials"
+        return "Invalid login!"
 
-# Dashboard
-@app.route('/dashboard')
+
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
         return redirect('/')
-    return render_template("dashboard.html")
 
-# Add Skills
-@app.route('/add_skill', methods=['GET','POST'])
-def add_skill():
     if request.method == 'POST':
         have = request.form['have']
         want = request.form['want']
 
-        conn = get_db()
-        cur = conn.cursor()
+        skill = Skills(user_id=session['user_id'], skills_have=have, skills_want=want)
+        db.session.add(skill)
+        db.session.commit()
 
-        cur.execute("INSERT INTO skills VALUES (?,?,?)",
-                    (session['user_id'], have, want))
-        conn.commit()
+    return render_template("dashboard.html")
 
-        return redirect('/dashboard')
 
-    return render_template("add_skill.html")
-
-# Match Logic
 @app.route('/matches')
 def matches():
-    conn = get_db()
-    cur = conn.cursor()
+    if 'user_id' not in session:
+        return redirect('/')
 
-    current = cur.execute("SELECT * FROM skills WHERE user_id=?",
-                          (session['user_id'],)).fetchone()
+    current_user = session['user_id']
+    user_skills = Skills.query.filter_by(user_id=current_user).first()
 
-    matches = cur.execute("""
-        SELECT users.name, skills.skills_have, skills.skills_want
-        FROM skills
-        JOIN users ON users.id = skills.user_id
-        WHERE skills.skills_have = ?
-        AND skills.skills_want = ?
-        AND skills.user_id != ?
-    """, (current[2], current[1], session['user_id'])).fetchall()
+    if not user_skills:
+        return "Please add skills first!"
 
-    return render_template("matches.html", matches=matches)
+    matched_users = Skills.query.filter(
+        Skills.skills_have.ilike(f"%{user_skills.skills_want}%"),
+        Skills.user_id != current_user
+    ).all()
 
-# Logout
+    results = []
+
+    for user in matched_users:
+        user_info = User.query.get(user.user_id)
+
+        results.append({
+            "name": user_info.name,
+            "email": user_info.email,
+            "have": user.skills_have,
+            "want": user.skills_want
+        })
+
+    return render_template("matches.html", matches=results)
+
+
+@app.route('/forgot', methods=['GET', 'POST'])
+def forgot():
+    if request.method == 'POST':
+        email = request.form['email']
+        new_password = request.form['new_password']
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            user.password = new_password
+            db.session.commit()
+            return "Password reset successful!"
+        else:
+            return "Email not found!"
+
+    return render_template("forgot.html")
+
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
 
+
+# ------------------ RUN ------------------
+
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

@@ -1,21 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>SkillSwap Hub</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI';
+            background: linear-gradient(135deg, #00c9a7, #92fe9d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 320px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #00a86b;
+            color: white;
+            border: none;
+            margin-top: 10px;
+        }
+
+        a {
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+
 </head>
+
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>SkillSwap Hub 🔥</h2>
-        <form action="/login" method="post">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button>Login</button>
-        </form>
-        <p>Don't have account? <a href="/register">Register</a></p>
-    </div>
+<div class="box">
+    <h2>HV2041</h2>
+    <h3>SkillSwap Hub</h3>
+
+    <form method="POST" action="/login">
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+
+        <button>Login</button>
+    </form>
+
+    <a href="/register">Create Account</a>
+    <a href="/forgot">Forgot Password?</a>
 </div>
 
 </body>

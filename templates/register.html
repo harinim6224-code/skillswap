@@ -2,21 +2,19 @@
 <html>
 <head>
     <title>Register</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
 
-<div class="container">
-    <div class="card">
-        <h2>Create Account 🚀</h2>
-        <form method="post">
-            <input type="text" name="name" placeholder="Name" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button>Register</button>
-        </form>
-    </div>
-</div>
+<body style="text-align:center; font-family:Segoe UI; background:#ccf2f4;">
+
+<h2>Create Account</h2>
+
+<form method="POST">
+    <input type="text" name="name" placeholder="Name" required><br><br>
+    <input type="email" name="email" placeholder="Email" required><br><br>
+    <input type="password" name="password" placeholder="Password" required><br><br>
+
+    <button>Register</button>
+</form>
 
 </body>
 </html>

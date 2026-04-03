@@ -2,21 +2,37 @@
 <html>
 <head>
     <title>Matches</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body {
+            font-family: 'Segoe UI';
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            text-align: center;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 15px auto;
+            width: 300px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>Matches 🤝</h2>
+<h1>Matching Profiles</h1>
 
-        {% for m in matches %}
-            <p>{{m[0]}} | Has: {{m[1]}} | Wants: {{m[2]}}</p>
-        {% endfor %}
-
-        <a href="/dashboard">Back</a>
-    </div>
+{% for match in matches %}
+<div class="card">
+    <h3>{{ match.name }}</h3>
+    <p>{{ match.email }}</p>
+    <p>Has: {{ match.have }}</p>
+    <p>Wants: {{ match.want }}</p>
 </div>
+{% endfor %}
 
 </body>
 </html>
