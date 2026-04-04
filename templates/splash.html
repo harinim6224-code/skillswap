@@ -17,19 +17,21 @@
         }
     </style>
 
-    <script>
-        setTimeout(function(){
-    window.location.href = "/loginpage";
-}, 8000);
-    </script>
-
 </head>
 
 <body>
-<video autoplay muted playsinline>
-    <source src="/static/intro.mp4?v=1" type="video/mp4">
+
+<video id="introVideo" autoplay muted playsinline>
+    <source src="/static/intro.mp4?v=3" type="video/mp4">
 </video>
-    
+
+<script>
+    var video = document.getElementById("introVideo");
+
+    video.onended = function() {
+        window.location.href = "/loginpage";
+    };
+</script>
 
 </body>
 </html>
