@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "secret123"
 
+# Database config
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 
@@ -23,11 +24,23 @@ class Skills(db.Model):
 
 # ------------------ ROUTES ------------------
 
+# 🎬 Splash screen (video first)
 @app.route('/')
-def home():
+def splash():
+    return render_template("splash.html"), 200, {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    }
+
+
+# 🔐 Login page
+@app.route('/loginpage')
+def loginpage():
     return render_template("login.html")
 
 
+# 📝 Register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -39,11 +52,12 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        return redirect('/')
+        return redirect('/loginpage')
 
     return render_template("register.html")
 
 
+# 🔑 Login logic
 @app.route('/login', methods=['POST'])
 def login():
     email = request.form['email']
@@ -58,10 +72,11 @@ def login():
         return "Invalid login!"
 
 
+# 🏠 Dashboard
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
-        return redirect('/')
+        return redirect('/loginpage')
 
     if request.method == 'POST':
         have = request.form['have']
@@ -74,10 +89,11 @@ def dashboard():
     return render_template("dashboard.html")
 
 
+# 🔍 Matching logic
 @app.route('/matches')
 def matches():
     if 'user_id' not in session:
-        return redirect('/')
+        return redirect('/loginpage')
 
     current_user = session['user_id']
     user_skills = Skills.query.filter_by(user_id=current_user).first()
@@ -105,6 +121,7 @@ def matches():
     return render_template("matches.html", matches=results)
 
 
+# 🔁 Forgot password
 @app.route('/forgot', methods=['GET', 'POST'])
 def forgot():
     if request.method == 'POST':
@@ -123,10 +140,11 @@ def forgot():
     return render_template("forgot.html")
 
 
+# 🚪 Logout
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect('/loginpage')
 
 
 # ------------------ RUN ------------------
