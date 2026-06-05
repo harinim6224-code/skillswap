@@ -96,7 +96,7 @@ def matches():
 
     current_user = session['user_id']
 
-    my_skill = Skills.query.filter_by(user_id=current_user).first()
+    my_skill = Skills.query.filter_by(user_id=current_user).all()
     all_users = Skills.query.filter(
     Skills.user_id != current_user
 ).all()
@@ -110,22 +110,25 @@ def matches():
 
     results = []
 
+for my_skill in my_skills:
+    all_users = Skills.query.filter(Skills.user_id != current_user).all()
+
     for other in all_users:
         if (
-    my_skill.skills_want.strip().lower() in other.skills_have.strip().lower()
-    and
-    my_skill.skills_have.strip().lower() in other.skills_want.strip().lower()
-):
+            my_skill.skills_want.strip().lower() == other.skills_have.strip().lower()
+            and
+            my_skill.skills_have.strip().lower() == other.skills_want.strip().lower()
+        ):
             user_info = User.query.get(other.user_id)
 
-            results.append({
-                "name": user_info.name,
-                "email": user_info.email,
-                "phone": user_info.phone,
-                "have": other.skills_have,
-                "want": other.skills_want
-            })
-
+            if user_info:
+                results.append({
+                    "name": user_info.name,
+                    "email": user_info.email,
+                    "phone": user_info.phone,
+                    "have": other.skills_have,
+                    "want": other.skills_want
+                })
     return render_template("matches.html", matches=results)
 
 @app.route('/forgot', methods=['GET', 'POST'])
