@@ -56,7 +56,7 @@ def register():
 def login():
     email = request.form['email']
     password = request.form['password']
-    phone = request.form['phone']
+  
 
     user = User.query.filter_by(
         email=email,
