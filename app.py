@@ -4,16 +4,16 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# Database config
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-db = SQLAlchemy(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ------------------ MODELS ------------------
+db = SQLAlchemy(app)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     email = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
     password = db.Column(db.String(100))
 
 class Skills(db.Model):
@@ -22,33 +22,29 @@ class Skills(db.Model):
     skills_have = db.Column(db.String(100))
     skills_want = db.Column(db.String(100))
 
-# ------------------ ROUTES ------------------
-
-# 🎬 Splash screen (video first)
 @app.route('/')
 def splash():
-    return render_template("splash.html"), 200, {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-    }
+    return render_template("splash.html")
 
-
-# 🔐 Login page
 @app.route('/loginpage')
 def loginpage():
     return render_template("login.html")
 
-
-# 📝 Register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
+        phone = request.form['phone']
         password = request.form['password']
 
-        user = User(name=name, email=email, password=password)
+        user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            password=password
+        )
+
         db.session.add(user)
         db.session.commit()
 
@@ -56,23 +52,22 @@ def register():
 
     return render_template("register.html")
 
-
-# 🔑 Login logic
 @app.route('/login', methods=['POST'])
 def login():
     email = request.form['email']
     password = request.form['password']
 
-    user = User.query.filter_by(email=email, password=password).first()
+    user = User.query.filter_by(
+        email=email,
+        password=password
+    ).first()
 
     if user:
         session['user_id'] = user.id
         return redirect('/dashboard')
-    else:
-        return "Invalid login!"
 
+    return "Invalid Login Credentials"
 
-# 🏠 Dashboard
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
@@ -82,46 +77,55 @@ def dashboard():
         have = request.form['have']
         want = request.form['want']
 
-        skill = Skills(user_id=session['user_id'], skills_have=have, skills_want=want)
+        skill = Skills(
+            user_id=session['user_id'],
+            skills_have=have,
+            skills_want=want
+        )
+
         db.session.add(skill)
         db.session.commit()
 
     return render_template("dashboard.html")
 
-
-# 🔍 Matching logic
 @app.route('/matches')
 def matches():
     if 'user_id' not in session:
         return redirect('/loginpage')
 
     current_user = session['user_id']
-    user_skills = Skills.query.filter_by(user_id=current_user).first()
 
-    if not user_skills:
+    my_skill = Skills.query.filter_by(user_id=current_user).first()
+
+    if not my_skill:
         return "Please add skills first!"
 
-    matched_users = Skills.query.filter(
-        Skills.skills_have.ilike(f"%{user_skills.skills_want}%"),
+    all_users = Skills.query.filter(
         Skills.user_id != current_user
     ).all()
 
     results = []
 
-    for user in matched_users:
-        user_info = User.query.get(user.user_id)
+    for other in all_users:
+        if (
+            my_skill.skills_want.lower().strip() ==
+            other.skills_have.lower().strip()
+            and
+            my_skill.skills_have.lower().strip() ==
+            other.skills_want.lower().strip()
+        ):
+            user_info = User.query.get(other.user_id)
 
-        results.append({
-            "name": user_info.name,
-            "email": user_info.email,
-            "have": user.skills_have,
-            "want": user.skills_want
-        })
+            results.append({
+                "name": user_info.name,
+                "email": user_info.email,
+                "phone": user_info.phone,
+                "have": other.skills_have,
+                "want": other.skills_want
+            })
 
     return render_template("matches.html", matches=results)
 
-
-# 🔁 Forgot password
 @app.route('/forgot', methods=['GET', 'POST'])
 def forgot():
     if request.method == 'POST':
@@ -133,23 +137,19 @@ def forgot():
         if user:
             user.password = new_password
             db.session.commit()
-            return "Password reset successful!"
-        else:
-            return "Email not found!"
+            return "Password Reset Successful!"
+
+        return "Email Not Found!"
 
     return render_template("forgot.html")
 
-
-# 🚪 Logout
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/loginpage')
 
-
-# ------------------ RUN ------------------
-
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+
     app.run(debug=True)
