@@ -1,59 +1,121 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Matches</title>
+from flask import Flask, render_template, request, redirect, session
+from flask_sqlalchemy import SQLAlchemy
 
-<style>
-body {
-    font-family: 'Segoe UI';
-    background: linear-gradient(to right, #00b09b, #96c93d);
-    text-align: center;
-    padding: 30px;
-}
+app = Flask(__name__)
+app.secret_key = "secret123"
 
-h1 {
-    color: white;
-}
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-.card {
-    background: white;
-    padding: 20px;
-    margin: 15px auto;
-    width: 300px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    text-align: left;
-}
+db = SQLAlchemy(app)
 
-.no-match {
-    color: white;
-    margin-top: 20px;
-    font-size: 18px;
-}
-</style>
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(100))
+    phone = db.Column(db.String(10))
+    password = db.Column(db.String(100))
 
-</head>
 
-<body>
+class Skills(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+    skills_have = db.Column(db.String(100))
+    skills_want = db.Column(db.String(100))
 
-<h1>🤝 Matching Profiles</h1>
 
-{% if matches and matches|length > 0 %}
+@app.route('/')
+def splash():
+    return render_template("splash.html")
 
-    {% for match in matches %}
-    <div class="card">
-        <h3>{{ match.name }}</h3>
-        <p><b>Email:</b> {{ match.email }}</p>
-        <p><b>Has:</b> {{ match.have }}</p>
-        <p><b>Wants:</b> {{ match.want }}</p>
-    </div>
-    {% endfor %}
 
-{% else %}
+@app.route('/loginpage')
+def loginpage():
+    return render_template("login.html")
 
-    <p class="no-match">No matches found yet 😕</p>
 
-{% endif %}
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        user = User(
+            name=request.form['name'],
+            email=request.form['email'],
+            phone=request.form['phone'],
+            password=request.form['password']
+        )
+        db.session.add(user)
+        db.session.commit()
+        return redirect('/loginpage')
 
-</body>
-</html>
+    return render_template("register.html")
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    user = User.query.filter_by(
+        email=request.form['email'],
+        password=request.form['password']
+    ).first()
+
+    if user:
+        session['user_id'] = user.id
+        return redirect('/dashboard')
+
+    return "Invalid Login"
+
+
+@app.route('/dashboard', methods=['GET', 'POST'])
+def dashboard():
+    if 'user_id' not in session:
+        return redirect('/loginpage')
+
+    if request.method == 'POST':
+        skill = Skills(
+            user_id=session['user_id'],
+            skills_have=request.form['have'].strip().lower(),
+            skills_want=request.form['want'].strip().lower()
+        )
+
+        db.session.add(skill)
+        db.session.commit()
+
+    return render_template("dashboard.html")
+
+
+@app.route('/matches')
+def matches():
+    if 'user_id' not in session:
+        return redirect('/loginpage')
+
+    current_user = session['user_id']
+
+    my_skills = Skills.query.filter_by(user_id=current_user).all()
+    all_users = Skills.query.filter(Skills.user_id != current_user).all()
+
+    results = []
+
+    my_pairs = set(
+        (s.skills_have, s.skills_want) for s in my_skills
+    )
+
+    for other in all_users:
+        if (other.skills_want, other.skills_have) in my_pairs:
+            user = User.query.get(other.user_id)
+
+            if user:
+                results.append({
+                    "name": user.name,
+                    "email": user.email,
+                    "phone": user.phone,
+                    "have": other.skills_have,
+                    "want": other.skills_want
+                })
+
+    return render_template("matches.html", matches=results)
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+
+    app.run(debug=True)

@@ -1,39 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Matches</title>
-
-    <style>
-        body {
-            font-family: 'Segoe UI';
-            background: linear-gradient(to right, #00b09b, #96c93d);
-            text-align: center;
-            padding: 30px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            margin: 15px auto;
-            width: 300px;
-            border-radius: 10px;
-        }
-    </style>
+<title>Matches</title>
+<style>
+body {
+font-family: 'Segoe UI';
+background: linear-gradient(to right, #00b09b, #96c93d);
+text-align: center;
+padding: 30px;
+}
+.card {
+background: white;
+padding: 20px;
+margin: 15px auto;
+width: 300px;
+border-radius: 10px;
+}
+</style>
 </head>
-
 <body>
-
 <h1>Matching Profiles</h1>
-
 {% for match in matches %}
 <div class="card">
-    <h3>{{ match.name }}</h3>
-    <p>Email: {{ match.email }}</p>
-    <p>Phone: {{ match.phone }}</p>
-    <p>Has: {{ match.have }}</p>
-    <p>Wants: {{ match.want }}</p>
+<h3>{{ match.name }}</h3>
+<p>Email: {{ match.email }}</p>
+<p>Phone: {{ match.phone }}</p>
+<p>Has: {{ match.have }}</p>
+<p>Wants: {{ match.want }}</p>
 </div>
 {% endfor %}
-
 </body>
-</html>
+</html
