@@ -4,18 +4,18 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "secret123"
 
+# Database config
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ---------------- MODELS ---------------- #
+# ------------------ MODELS ------------------
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     email = db.Column(db.String(100))
-    phone = db.Column(db.String(10))
     password = db.Column(db.String(100))
 
 
@@ -25,8 +25,7 @@ class Skills(db.Model):
     skills_have = db.Column(db.String(100))
     skills_want = db.Column(db.String(100))
 
-
-# ---------------- ROUTES ---------------- #
+# ------------------ ROUTES ------------------
 
 @app.route('/')
 def splash():
@@ -41,14 +40,14 @@ def loginpage():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        user = User(
-            name=request.form['name'],
-            email=request.form['email'],
-            phone=request.form['phone'],
-            password=request.form['password']
-        )
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+
+        user = User(name=name, email=email, password=password)
         db.session.add(user)
         db.session.commit()
+
         return redirect('/loginpage')
 
     return render_template("register.html")
@@ -56,19 +55,17 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    user = User.query.filter_by(
-        email=request.form['email'],
-        password=request.form['password']
-    ).first()
+    email = request.form['email']
+    password = request.form['password']
+
+    user = User.query.filter_by(email=email, password=password).first()
 
     if user:
         session['user_id'] = user.id
         return redirect('/dashboard')
 
-    return "Invalid Login"
+    return "Invalid login!"
 
-
-# ---------------- DASHBOARD (FIXED SAFE VERSION) ---------------- #
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -76,28 +73,20 @@ def dashboard():
         return redirect('/loginpage')
 
     if request.method == 'POST':
-        have = request.form.get('have', '').strip().lower()
-        want = request.form.get('want', '').strip().lower()
+        have = request.form['have']
+        want = request.form['want']
 
-        if have and want:
-            skill = Skills(
-                user_id=session['user_id'],
-                skills_have=have,
-                skills_want=want
-            )
+        skill = Skills(
+            user_id=session['user_id'],
+            skills_have=have,
+            skills_want=want
+        )
 
-            db.session.add(skill)
-            db.session.commit()
-
-            print("SKILL SAVED ✔")
-
-        else:
-            print("EMPTY INPUT ❌")
+        db.session.add(skill)
+        db.session.commit()
 
     return render_template("dashboard.html")
 
-
-# ---------------- MATCHING (FIXED LOGIC) ---------------- #
 
 @app.route('/matches')
 def matches():
@@ -106,49 +95,61 @@ def matches():
 
     current_user = session['user_id']
 
-    def norm(text):
-        return text.strip().lower()
+    user_skills = Skills.query.filter_by(user_id=current_user).first()
 
-    my_skills = Skills.query.filter_by(user_id=current_user).all()
-    all_users = Skills.query.filter(Skills.user_id != current_user).all()
-
-    if not my_skills:
+    if not user_skills:
         return "Please add skills first!"
+
+    matched_users = Skills.query.filter(
+        Skills.skills_have.ilike(f"%{user_skills.skills_want}%"),
+        Skills.user_id != current_user
+    ).all()
 
     results = []
 
-    my_pairs = set(
-        (norm(s.skills_have), norm(s.skills_want))
-        for s in my_skills
-    )
+    for user in matched_users:
+        user_info = User.query.get(user.user_id)
 
-    for other in all_users:
-        other_pair = (norm(other.skills_have), norm(other.skills_want))
-
-        if (other_pair[1], other_pair[0]) in my_pairs:
-            user = User.query.get(other.user_id)
-
-            if user:
-                results.append({
-                    "name": user.name,
-                    "email": user.email,
-                    "phone": user.phone,
-                    "have": other.skills_have,
-                    "want": other.skills_want
-                })
+        if user_info:
+            results.append({
+                "name": user_info.name,
+                "email": user_info.email,
+                "have": user.skills_have,
+                "want": user.skills_want
+            })
 
     return render_template("matches.html", matches=results)
 
 
-# ---------------- DEBUG CHECK ---------------- #
+@app.route('/forgot', methods=['GET', 'POST'])
+def forgot():
+    if request.method == 'POST':
+        email = request.form['email']
+        new_password = request.form['new_password']
 
-@app.route('/check')
-def check():
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            user.password = new_password
+            db.session.commit()
+            return "Password reset successful!"
+        else:
+            return "Email not found!"
+
+    return render_template("forgot.html")
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/loginpage')
+@app.route('/view-skills')
+def view_skills():
     data = Skills.query.all()
 
     return {
-        "total_skills": len(data),
-        "data": [
+        "count": len(data),
+        "skills": [
             {
                 "user_id": s.user_id,
                 "have": s.skills_have,
@@ -157,8 +158,7 @@ def check():
         ]
     }
 
-
-# ---------------- RUN APP ---------------- #
+# ------------------ RUN ------------------
 
 if __name__ == "__main__":
     with app.app_context():
