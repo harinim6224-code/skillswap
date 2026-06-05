@@ -13,7 +13,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     email = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
+    phone = db.Column(db.String(10))
     password = db.Column(db.String(100))
 
 class Skills(db.Model):
@@ -56,6 +56,7 @@ def register():
 def login():
     email = request.form['email']
     password = request.form['password']
+    phone = request.form['phone']
 
     user = User.query.filter_by(
         email=email,
