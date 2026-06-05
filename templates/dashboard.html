@@ -1,24 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-</head>
+@app.route('/dashboard', methods=['GET', 'POST'])
+def dashboard():
+    if 'user_id' not in session:
+        return redirect('/loginpage')
 
-<body style="text-align:center; font-family:Segoe UI; background:#e0ffe0;">
+    if request.method == 'POST':
+        print("POST RECEIVED ✔")
+        print("FORM DATA:", request.form)
 
-<h2>Add Skills</h2>
+        have = request.form['have']
+        want = request.form['want']
 
-<form method="POST">
-    <input type="text" name="have" placeholder="Skills you have"><br><br>
-    <input type="text" name="want" placeholder="Skills you want"><br><br>
+        print("HAVE:", have, "WANT:", want)
 
-    <button>Add</button>
-</form>
+        skill = Skills(
+            user_id=session['user_id'],
+            skills_have=have,
+            skills_want=want
+        )
 
-<br>
+        db.session.add(skill)
+        db.session.commit()
 
-<a href="/matches">Find Matches</a> |
-<a href="/logout">Logout</a>
+        print("SAVED ✔")
 
-</body>
-</html>
+    return render_template("dashboard.html")

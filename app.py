@@ -9,6 +9,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# ---------------- MODELS ---------------- #
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
@@ -23,6 +25,8 @@ class Skills(db.Model):
     skills_have = db.Column(db.String(100))
     skills_want = db.Column(db.String(100))
 
+
+# ---------------- ROUTES ---------------- #
 
 @app.route('/')
 def splash():
@@ -64,23 +68,36 @@ def login():
     return "Invalid Login"
 
 
+# ---------------- DASHBOARD (FIXED SAFE VERSION) ---------------- #
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
         return redirect('/loginpage')
 
     if request.method == 'POST':
-        skill = Skills(
-            user_id=session['user_id'],
-            skills_have=request.form['have'].strip().lower(),
-            skills_want=request.form['want'].strip().lower()
-        )
+        have = request.form.get('have', '').strip().lower()
+        want = request.form.get('want', '').strip().lower()
 
-        db.session.add(skill)
-        db.session.commit()
+        if have and want:
+            skill = Skills(
+                user_id=session['user_id'],
+                skills_have=have,
+                skills_want=want
+            )
+
+            db.session.add(skill)
+            db.session.commit()
+
+            print("SKILL SAVED ✔")
+
+        else:
+            print("EMPTY INPUT ❌")
 
     return render_template("dashboard.html")
 
+
+# ---------------- MATCHING (FIXED LOGIC) ---------------- #
 
 @app.route('/matches')
 def matches():
@@ -89,17 +106,26 @@ def matches():
 
     current_user = session['user_id']
 
+    def norm(text):
+        return text.strip().lower()
+
     my_skills = Skills.query.filter_by(user_id=current_user).all()
     all_users = Skills.query.filter(Skills.user_id != current_user).all()
+
+    if not my_skills:
+        return "Please add skills first!"
 
     results = []
 
     my_pairs = set(
-        (s.skills_have, s.skills_want) for s in my_skills
+        (norm(s.skills_have), norm(s.skills_want))
+        for s in my_skills
     )
 
     for other in all_users:
-        if (other.skills_want, other.skills_have) in my_pairs:
+        other_pair = (norm(other.skills_have), norm(other.skills_want))
+
+        if (other_pair[1], other_pair[0]) in my_pairs:
             user = User.query.get(other.user_id)
 
             if user:
@@ -113,6 +139,26 @@ def matches():
 
     return render_template("matches.html", matches=results)
 
+
+# ---------------- DEBUG CHECK ---------------- #
+
+@app.route('/check')
+def check():
+    data = Skills.query.all()
+
+    return {
+        "total_skills": len(data),
+        "data": [
+            {
+                "user_id": s.user_id,
+                "have": s.skills_have,
+                "want": s.skills_want
+            } for s in data
+        ]
+    }
+
+
+# ---------------- RUN APP ---------------- #
 
 if __name__ == "__main__":
     with app.app_context():
