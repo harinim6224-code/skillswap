@@ -97,6 +97,9 @@ def matches():
     current_user = session['user_id']
 
     my_skill = Skills.query.filter_by(user_id=current_user).first()
+    all_users = Skills.query.filter(
+    Skills.user_id != current_user
+).all()
 
     if not my_skill:
         return "Please add skills first!"
@@ -109,12 +112,10 @@ def matches():
 
     for other in all_users:
         if (
-            my_skill.skills_want.lower().strip() ==
-            other.skills_have.lower().strip()
-            and
-            my_skill.skills_have.lower().strip() ==
-            other.skills_want.lower().strip()
-        ):
+    my_skill.skills_want.strip().lower() in other.skills_have.strip().lower()
+    and
+    my_skill.skills_have.strip().lower() in other.skills_want.strip().lower()
+):
             user_info = User.query.get(other.user_id)
 
             results.append({
@@ -151,7 +152,7 @@ def logout():
 
 if __name__ == "__main__":
     with app.app_context():
-        db.drop_all()
+    
         db.create_all()
 
     app.run(debug=True)
